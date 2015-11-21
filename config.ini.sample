@@ -1,0 +1,7 @@
+[DEFAULT]
+username = 
+password = 
+volunteerspot_uri = URL_TO_REPORT
+save_directory = /tmp/
+filename = /tmp/REPORT_NAME.csv
+
