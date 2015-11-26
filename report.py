@@ -165,11 +165,15 @@ class Report(object):
     html = html.replace('__NEED__', need_text)
 
     table = '<table>'
+    table += '<tr>'
+    table += '<th>Date</th>'
+    table += '<th>Leader</th>'
+    table += '</tr>'
     for date in self.dates:
       data = self.data[date]
       table += '<tr>'
       table += '<td>'+date+'</td>'
-      table += '<td>Worship Leader: ' + (data['Worship Leader'] or 'None') + '</td>'
+      table += '<td>' + (data['Worship Leader'] or 'None') + '</td>'
       table += '</tr>'
     table += '</table>'
 
