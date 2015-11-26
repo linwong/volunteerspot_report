@@ -5,3 +5,14 @@ volunteerspot_uri = URL_TO_REPORT
 save_directory = /tmp/
 filename = /tmp/REPORT_NAME.csv
 
+[SMTP]
+smtp = smtp.gmail.com
+smtp_port = 587
+smtp_username = gmail_username
+smtp_password = gmail_password
+
+[REPORT]
+email_template = email-body
+from = from@abcdefg.com
+subject = Report
+emails = ["a@bcd.com", "test@def.com"]

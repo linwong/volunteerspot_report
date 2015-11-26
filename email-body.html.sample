@@ -1,0 +1,21 @@
+<html>
+  <head>
+    <style>
+      table {
+        border-collapse: collapse;
+      }
+      td + td,
+      th + th { border-left: 1px solid black; }
+      tr + tr { border-top: 1px solid black; }
+
+      td, th { padding: 10px; }
+    </style>
+  </head>
+  <body>
+    <p>This is an automated report.</p>
+    <p style="font-weight: bold; text-decoration: underline">__NEED__</p>
+    <p>Here is who has signed up for the next 4 weeks:</p>
+    <p>__SIGNUPS__</p>
+    <p>Please sign up at <a href="--volunteerspoturl--">Volunteerspot</a></p>
+  </body>
+</html>
