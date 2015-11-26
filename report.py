@@ -5,11 +5,16 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 import sys
 import time
 import os
 import configparser
 import csv
+import datetime
+import json
+import smtplib
 
 class AutoVivification(dict):
   """Implementation of perl's autovivification feature."""
@@ -32,8 +37,16 @@ class Report(object):
     self.save_directory    = config['DEFAULT']['save_directory']
     self.filename          = config['DEFAULT']['filename']
     self.volunteerspot_uri = config['DEFAULT']['volunteerspot_uri']
+    self.smtp              = config['SMTP']['smtp']
+    self.smtp_port         = config['SMTP']['smtp_port']
+    self.smtp_username     = config['SMTP']['smtp_username']
+    self.smtp_password     = config['SMTP']['smtp_password']
+    self.email_template    = config['REPORT']['email_template']
+    self.email_from        = config['REPORT']['from']
+    self.email_subject     = config['REPORT']['subject']
+    self.emails            = json.loads(config['REPORT']['emails'])
 
-
+    
   def download(self):
     # I don't believe there's an API to download reports from
     # volunteerspot.com.  We use Selenium to login, naviagate to the
@@ -82,13 +95,8 @@ class Report(object):
         break
       except:
         time.sleep(1)
-        print 'waiting for export button'
 
-    print self.filename
-    print self.username
-    print os.path.exists(self.filename)
     if os.path.exists(self.filename):
-      print 'removing file' + self.filename
       os.remove(self.filename)
 
     # Click on the export button which saves the file
@@ -97,11 +105,9 @@ class Report(object):
     # Quit Firefox once file has been saved
     while True:
       if os.path.isfile(self.filename):
-        print 'quitting firefox'
         driver.quit()
         break
       else:
-        print 'waiting for download'
         time.sleep(1)
 
     display.stop()
@@ -117,21 +123,86 @@ class Report(object):
     # remove header
     lines.pop(0)
 
-    data = AutoVivification()
+    self.data = AutoVivification()
     for line in lines:
-      print line
       date = line[0]
       role = line[1]
       if len(line) > 6:
         name = line[6]
       else:
         name = None
-      data[date][role] = name
-
-    for key in sorted(data):
-      print key
-      print data[key]
+      self.data[date][role] = name
 
 
-  def email(self):
-    print 'email'
+
+  def get_next_dates(self, number, day):
+    current_day = datetime.date.today()
+    self.dates = []
+    while (number > 0):
+      target_day = current_day + datetime.timedelta( (day - 1 - current_day.weekday()) % 7 + 1 )
+      self.dates.append(target_day.isoformat())
+      current_day = target_day
+      number -= 1
+      
+
+  # -------THIS IS HARD CODED FOR NOW. NEED TO CHANGE-----------
+  def send_email(self):
+    with open(self.email_template + '.txt') as file:
+      body = file.read()
+    file.close()
+    with open(self.email_template + '.html') as file:
+      html = file.read()
+    file.close()
+
+    # Processing data
+    # Check if anybody signed up for this coming Sunday
+    if (not self.data[self.dates[0]]['Worship Leader']):
+      # we need someone
+      need_text = 'NOTE: There is NO Worship Leader signed up for this Sunday, ' + self.dates[0]
+    else:
+      need_text = ''
+    body = body.replace('__NEED__', need_text)
+    html = html.replace('__NEED__', need_text)
+
+    table = '<table>'
+    for date in self.dates:
+      data = self.data[date]
+      table += '<tr>'
+      table += '<td>'+date+'</td>'
+      table += '<td>Worship Leader: ' + (data['Worship Leader'] or 'None') + '</td>'
+      table += '</tr>'
+    table += '</table>'
+
+    body = body.replace('__SIGNUPS__', table)
+    html = html.replace('__SIGNUPS__', table)
+        
+    FROM = self.email_from
+    TO = self.emails
+    SUBJECT = self.email_subject + ' - ' + datetime.date.today().isoformat()
+
+    # Prepare actual message
+    # Create message container - the correct MIME type is multipart/alternative.
+    msg = MIMEMultipart('alternative')
+    msg['Subject'] = SUBJECT
+    msg['From'] = FROM
+    msg['To'] = ",".join(TO)
+
+    # Record the MIME types of both parts - text/plain and text/html.
+    part1 = MIMEText(body, 'plain')
+    part2 = MIMEText(html, 'html')
+
+    # Attach parts into message container.
+    # According to RFC 2046, the last part of a multipart message, in this case
+    # the HTML message, is best and preferred.
+    msg.attach(part1)
+    msg.attach(part2)
+
+    try:
+      server = smtplib.SMTP(self.smtp+':'+self.smtp_port)
+      server.ehlo()
+      server.starttls()
+      server.login(self.smtp_username, self.smtp_password)
+      server.sendmail(FROM, TO, msg.as_string())
+      server.close()
+    except Exception, error:
+      print error

@@ -1,3 +1,5 @@
 *~
 config.ini
 *.pyc
+email-body.html
+email-body.txt
