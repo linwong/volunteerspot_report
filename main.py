@@ -2,9 +2,25 @@
 
 from report import *
 import calendar
+import sys
+import getopt
+from pprint import pprint
+
+try:
+    opts, args = getopt.getopt(sys.argv[1:], 'c:p:', ['config=', 'path='])
+except getopt.GetoptError:
+    sys.exit(2)
+
+config = None
+path = ''
+for opt, arg in opts:
+  if opt in ('-c', '--config'):
+    config = arg
+  if opt in ('-p', '--path'):
+    path = arg
 
 # First we need to download the report
-report = Report()
+report = Report(path, config)
 report.download()
 
 # Next we parse the data from the csv file
