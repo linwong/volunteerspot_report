@@ -27,11 +27,15 @@ class AutoVivification(dict):
 
 
 class Report(object):
-  def __init__(self):
+  def __init__(self, path, config_file):
     # Config
     #  ** Check config.ini.sample for configuration options
+    if config_file == None:
+      config_file = 'config.ini'
+
     config = configparser.ConfigParser()
-    config.read('config.ini')
+    config.read(path + config_file)
+    self.path              = path
     self.username          = config['DEFAULT']['username']
     self.password          = config['DEFAULT']['password']
     self.save_directory    = config['DEFAULT']['save_directory']
@@ -147,10 +151,10 @@ class Report(object):
 
   # -------THIS IS HARD CODED FOR NOW. NEED TO CHANGE-----------
   def send_email(self):
-    with open(self.email_template + '.txt') as file:
+    with open(self.path + self.email_template + '.txt') as file:
       body = file.read()
     file.close()
-    with open(self.email_template + '.html') as file:
+    with open(self.path + self.email_template + '.html') as file:
       html = file.read()
     file.close()
 
